@@ -26,21 +26,27 @@ const form = useForm({
 let conversationHistory = []
 
 const submitMessage = () => {
+    // Add the user message to the conversation history
     conversationHistory.push({
         role: 'user',
         content: form.message,
     });
 
+    // Send the message to the server
     form.post(route('chat.send'), {
+        data: { message: form.message }, // Send the user message to the server
         onSuccess: (page) => {
-            // Assuming the reply is returned in the response
-            const reply = page.props.reply;
-            console.log(page);
-            conversationHistory.push({
-                role: 'system',
-                content: reply,
-            });
-            form.reset();
+            const reply = page.props.reply; // Get the reply from the server
+
+            // Add the system's reply to the conversation history
+            if (reply) {
+                conversationHistory.push({
+                    role: 'system',
+                    content: reply,
+                });
+            }
+
+            form.reset(); // Reset the form after successful submission
         },
     });
 };
@@ -75,7 +81,7 @@ const submitMessage = () => {
         <!-- Chat Area -->
         <main class="flex-1 overflow-y-auto p-4 space-y-4">
             <div class="flex flex-col space-y-2">
-                <template v-for="(message, index) in conversationHistory" :key="index">
+                <template v-for="(message, index) in $page.props.conversationHistory" :key="index">
                     <SystemMessage v-if="message.role === 'system'" :message="message.content" />
                     <UserMessage v-else-if="message.role === 'user'" :message="message.content" />
                 </template>
@@ -83,7 +89,7 @@ const submitMessage = () => {
         </main>
 
         <!-- Input Box -->
-        <footer class="bg-white dark:bg-gray-800 py-4 px-6">
+        <footer class="bg-white dark:bg-gray-800 py-4 px-6 fixed bottom-0 w-full">
             <form @submit.prevent="submitMessage" class="flex items-center space-x-4">
                 <TextInput
                     v-model="form.message"

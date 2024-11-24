@@ -5,12 +5,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\ChatGptController;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-    ]);
-});
+Route::get('/chat', [ChatGptController::class, 'show'])->name('chat.show');
 
 Route::middleware([
     'auth:sanctum',
@@ -22,4 +17,4 @@ Route::middleware([
     })->name('dashboard');
 });
 
-Route::post('/chat/send', [ChatGptController::class, 'send'])->name('chat.send');
+Route::post('/chat', [ChatGptController::class, 'send'])->name('chat.send');

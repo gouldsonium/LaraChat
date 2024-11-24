@@ -7,7 +7,7 @@ defineProps({
 })
 </script>
 <template>
-    <div class="self-end bg-primary text-white p-3 rounded-md max-w-xs">
+    <div class="self-end bg-primary text-white p-3 rounded-md max-w-7xl">
         {{ message }}
     </div>
 </template>
