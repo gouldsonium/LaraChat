@@ -1,8 +1,10 @@
 import defaultTheme from 'tailwindcss/defaultTheme';
 import forms from '@tailwindcss/forms';
 import typography from '@tailwindcss/typography';
+import { config } from 'dotenv';
 
-/** @type {import('tailwindcss').Config} */
+config(); // Load environment variables from .env file
+
 export default {
     content: [
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
@@ -16,6 +18,9 @@ export default {
         extend: {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+            },
+            colors: {
+                primary: process.env.PRIMARY_COLOR || '#FF2D20', // Fallback if PRIMARY_COLOR is not set
             },
         },
     },
