@@ -1,10 +1,9 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import TextInput from '@/Components/TextInput.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
-import SystemMessage from '@/Components/Chat/SystemMessage.vue';
-import UserMessage from '@/Components/Chat/UserMessage.vue';
+import ChatMessage from '@/Components/Chat/ChatMessage.vue';
 
 defineProps({
     canLogin: {
@@ -17,13 +16,14 @@ defineProps({
         required: false
     }
 });
+const { props } = usePage();
+let conversationHistory = props.conversationHistory || [];
 
 // Initialize the Inertia form
 const form = useForm({
     message: '', // The message to send
 });
 
-let conversationHistory = []
 
 const submitMessage = () => {
     // Add the user message to the conversation history
@@ -34,7 +34,6 @@ const submitMessage = () => {
 
     // Send the message to the server
     form.post(route('chat.send'), {
-        data: { message: form.message }, // Send the user message to the server
         onSuccess: (page) => {
             const reply = page.props.reply; // Get the reply from the server
 
@@ -79,11 +78,10 @@ const submitMessage = () => {
         </header>
 
         <!-- Chat Area -->
-        <main class="flex-1 overflow-y-auto p-4 space-y-4">
+        <main class="flex-1 overflow-y-auto p-4 space-y-4 pb-24">
             <div class="flex flex-col space-y-2">
-                <template v-for="(message, index) in $page.props.conversationHistory" :key="index">
-                    <SystemMessage v-if="message.role === 'system'" :message="message.content" />
-                    <UserMessage v-else-if="message.role === 'user'" :message="message.content" />
+                <template v-for="(message, index) in conversationHistory" :key="index">
+                    <ChatMessage :role="message.role" :message="message.content" />
                 </template>
             </div>
         </main>
@@ -96,6 +94,7 @@ const submitMessage = () => {
                     type="text"
                     placeholder="Type your message..."
                     class="flex-1"
+                    :disabled="form.processing"
                     autofocus
                 />
                 <PrimaryButton
