@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 class ChatGptController extends Controller
 {
@@ -15,9 +15,7 @@ class ChatGptController extends Controller
         // Retrieve the conversation history from the session on first load
         $conversationHistory = session('conversation_history', []);
 
-        return Inertia::render('Welcome', [
-            'canLogin' => Route::has('login'),
-            'canRegister' => Route::has('register'),
+        return Inertia::render('Chat', [
             'conversationHistory' => $conversationHistory, // Pass conversation history
         ]);
     }
@@ -43,8 +41,8 @@ class ChatGptController extends Controller
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . $apiKey,
             'Content-Type' => 'application/json',
-        ])->withoutVerifying()->post('https://api.openai.com/v1/chat/completions', [
-            'model' => 'gpt-3.5-turbo',
+        ])->post('https://api.openai.com/v1/chat/completions', [
+            'model' => 'gpt-4o-mini',
             'messages' => $conversationHistory,
         ]);
 
@@ -62,14 +60,18 @@ class ChatGptController extends Controller
             session(['conversation_history' => $conversationHistory]);
 
             // Return the updated conversation to the frontend
-            return Inertia::render('Welcome', [
-                'canLogin' => Route::has('login'),
-                'canRegister' => Route::has('register'),
+            return Inertia::render('Chat', [
                 'conversationHistory' => $conversationHistory, // Pass conversation history
                 'reply' => $reply,
             ]);
         }
 
         return back()->withErrors(['error' => 'Failed to fetch response from OpenAI']);
+    }
+
+    public function clearConversation(Request $request)
+    {
+        $request->session()->forget('conversation_history');
+        return redirect()->back();
     }
 }
