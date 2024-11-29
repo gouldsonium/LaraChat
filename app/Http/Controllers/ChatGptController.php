@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 class ChatGptController extends Controller
@@ -17,6 +16,8 @@ class ChatGptController extends Controller
 
         return Inertia::render('Chat', [
             'conversationHistory' => $conversationHistory, // Pass conversation history
+            'appName' => env('APP_NAME', 'Chat Interface'), // Provide a default value
+            'logoUrl' => env('LOGO_URL')
         ]);
     }
 
@@ -30,6 +31,22 @@ class ChatGptController extends Controller
 
         // Retrieve the previous conversation from the session
         $conversationHistory = session('conversation_history', []);
+
+        // Add full system message to the conversation if it's the first message
+        if (empty($conversationHistory)) {
+            // Check if SYSTEM_MESSAGE_LINK is set, otherwise get the file from the storage folder
+            $systemMessageLink = env('SYSTEM_MESSAGE_LINK');
+            if (!empty($systemMessageLink)) {
+                $systemMessage = file_get_contents($systemMessageLink);
+            } else {
+                $systemMessagePath = storage_path('system_message.txt'); // Path to the file in storage
+                $systemMessage = file_exists($systemMessagePath)
+                    ? file_get_contents($systemMessagePath)
+                    : 'Default system message not found.';
+            }
+
+            $conversationHistory[] = ['role' => 'system', 'content' => $systemMessage];
+        }
 
         // Add the user's current message to the conversation
         $conversationHistory[] = [
@@ -59,14 +76,12 @@ class ChatGptController extends Controller
             // Save the conversation history in the session
             session(['conversation_history' => $conversationHistory]);
 
-            // Return the updated conversation to the frontend
-            return Inertia::render('Chat', [
-                'conversationHistory' => $conversationHistory, // Pass conversation history
-                'reply' => $reply,
-            ]);
+            return Inertia::location(url()->previous()); // Redirect without full reload
         }
 
-        return back()->withErrors(['error' => 'Failed to fetch response from OpenAI']);
+        return back()->withErrors([
+            'error' => 'Failed to fetch response from OpenAI',
+        ]);
     }
 
     public function clearConversation(Request $request)

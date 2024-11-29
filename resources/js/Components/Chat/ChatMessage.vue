@@ -17,7 +17,9 @@ const props = defineProps({
 // Use computed property to format message
 const formattedMessage = computed(() => formatMessage(props.message));
 const messageClass = computed(() => {
-    return props.role == 'user' ? 'self-end bg-primary text-white' : 'self-start bg-gray-200 text-black dark:bg-gray-800 dark:text-white'
+    return props.role == 'user' ? 'self-end bg-primary text-white'
+    : props.role == 'loading' ? 'self-start animate-pulse text-primary bg-gray-200 dark:bg-gray-800'
+    : 'self-start bg-gray-200 text-black dark:bg-gray-800 dark:text-white'
 })
 </script>
 
