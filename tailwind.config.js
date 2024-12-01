@@ -20,7 +20,7 @@ export default {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
             },
             colors: {
-                primary: process.env.PRIMARY_COLOR || '#FF2D20', // Fallback if PRIMARY_COLOR is not set
+                primary: '#FF2D20'
             },
         },
     },

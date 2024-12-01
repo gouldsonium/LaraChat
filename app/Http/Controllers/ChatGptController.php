@@ -16,8 +16,6 @@ class ChatGptController extends Controller
 
         return Inertia::render('Chat', [
             'conversationHistory' => $conversationHistory, // Pass conversation history
-            'appName' => env('APP_NAME', 'Chat Interface'), // Provide a default value
-            'logoUrl' => env('LOGO_URL')
         ]);
     }
 
@@ -34,17 +32,8 @@ class ChatGptController extends Controller
 
         // Add full system message to the conversation if it's the first message
         if (empty($conversationHistory)) {
-            // Check if SYSTEM_MESSAGE_LINK is set, otherwise get the file from the storage folder
-            $systemMessageLink = env('SYSTEM_MESSAGE_LINK');
-            if (!empty($systemMessageLink)) {
-                $systemMessage = file_get_contents($systemMessageLink);
-            } else {
-                $systemMessagePath = storage_path('system_message.txt'); // Path to the file in storage
-                $systemMessage = file_exists($systemMessagePath)
-                    ? file_get_contents($systemMessagePath)
-                    : 'Default system message not found.';
-            }
-
+            $systemMessagePath = storage_path('system_message.txt'); // Path to the file in storage
+            $systemMessage = file_get_contents($systemMessagePath);
             $conversationHistory[] = ['role' => 'system', 'content' => $systemMessage];
         }
 
