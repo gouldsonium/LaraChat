@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Inertia\Inertia;
+use App\Services\ChatGptService;
 
 class ChatGptController extends Controller
 {
@@ -19,14 +20,12 @@ class ChatGptController extends Controller
         ]);
     }
 
-    public function send(Request $request)
+    public function send(Request $request, ChatGptService $chatGptService)
     {
         $request->validate([
             'message' => 'required|string',
             'model' => 'required'
         ]);
-
-        $apiKey = env('OPEN_AI_KEY'); // Ensure this is set in your .env file
 
         // Retrieve the previous conversation from the session
         $conversationHistory = session('conversation_history', []);
@@ -45,14 +44,7 @@ class ChatGptController extends Controller
         ];
 
         // Send the conversation history to OpenAI
-        $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $apiKey,
-            'Content-Type' => 'application/json',
-        ])->post('https://api.openai.com/v1/chat/completions', [
-            'model' => $request->model,
-            'messages' => $conversationHistory,
-            // 'store' => true
-        ]);
+        $response = $chatGptService->createCompletions($conversationHistory, $request->model);
 
         if ($response->successful()) {
             // Get the system's reply
