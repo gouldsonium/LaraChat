@@ -9,9 +9,18 @@ import ChatMessage from '@/Components/Chat/ChatMessage.vue';
 const { props } = usePage();
 let conversationHistory = props.conversationHistory || [];
 
+// Accept a `model` prop
+const chatProps = defineProps({
+    model: {
+        type: String,
+        default: 'gpt-4o-mini',
+    },
+});
+
 // Initialize the Inertia form
 const form = useForm({
     message: '',
+    model: chatProps.model,
 });
 
 const isLoading = ref(false);

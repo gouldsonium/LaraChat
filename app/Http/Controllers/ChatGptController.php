@@ -23,6 +23,7 @@ class ChatGptController extends Controller
     {
         $request->validate([
             'message' => 'required|string',
+            'model' => 'required'
         ]);
 
         $apiKey = env('OPEN_AI_KEY'); // Ensure this is set in your .env file
@@ -48,8 +49,9 @@ class ChatGptController extends Controller
             'Authorization' => 'Bearer ' . $apiKey,
             'Content-Type' => 'application/json',
         ])->post('https://api.openai.com/v1/chat/completions', [
-            'model' => 'gpt-4o-mini',
+            'model' => $request->model,
             'messages' => $conversationHistory,
+            // 'store' => true
         ]);
 
         if ($response->successful()) {
