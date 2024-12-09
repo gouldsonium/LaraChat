@@ -10,7 +10,7 @@ class ChatGptService
     public function createCompletions(array $conversationHistory, string $model, string $user = null)
     {
         try {
-            $apiKey = env('OPEN_AI_KEY'); // Ensure this is set in your .env file
+            $apiKey = config('chat-gpt.key'); // Ensure this is set in your .env file
 
             // OpenAI API request
             return Http::withHeaders([
