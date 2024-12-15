@@ -10,7 +10,10 @@ Route::middleware([
     'verified',
     ])->group(function () {
         Route::get('/dashboard', function () {
-            return Inertia::render('Dashboard');
+            $conversationHistory = session('conversation_history', []);
+            return Inertia::render('Dashboard', [
+                'conversationHistory' => $conversationHistory
+            ]);
         })->name('dashboard');
     });
 

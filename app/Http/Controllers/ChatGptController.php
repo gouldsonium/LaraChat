@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use App\Services\ChatGptService;
 
 class ChatGptController extends Controller
 {
@@ -19,13 +20,12 @@ class ChatGptController extends Controller
         ]);
     }
 
-    public function send(Request $request)
+    public function send(Request $request, ChatGptService $chatGptService)
     {
         $request->validate([
             'message' => 'required|string',
+            'model' => 'required'
         ]);
-
-        $apiKey = env('OPEN_AI_KEY'); // Ensure this is set in your .env file
 
         // Retrieve the previous conversation from the session
         $conversationHistory = session('conversation_history', []);
@@ -44,17 +44,39 @@ class ChatGptController extends Controller
         ];
 
         // Send the conversation history to OpenAI
-        $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $apiKey,
-            'Content-Type' => 'application/json',
-        ])->post('https://api.openai.com/v1/chat/completions', [
-            'model' => 'gpt-4o-mini',
-            'messages' => $conversationHistory,
-        ]);
+        $response = $chatGptService->createCompletions($conversationHistory, $request->model);
 
         if ($response->successful()) {
             // Get the system's reply
             $reply = $response->json('choices')[0]['message']['content'];
+
+            if($request->paid){
+                $usage = $response->json('usage'); // Assuming 'usage' includes 'prompt_tokens' and 'completion_tokens'
+
+                // Define pricing for input and output tokens based on the model
+                $pricingConfig = config('chat-gpt.models');
+
+                // Get the model's pricing or fall back to a default pricing
+                $pricing = $pricingConfig[$request->model] ?? ['input' => 0.0000015, 'output' => 0.000002];
+
+                // Calculate the total cost
+                $inputCost = ($usage['prompt_tokens'] ?? 0) * $pricing['input'];
+                $outputCost = ($usage['completion_tokens'] ?? 0) * $pricing['output'];
+                $totalCost = $inputCost + $outputCost;
+
+                /** @var \App\Models\User $user */
+                $user = Auth::user();
+                // Check if the user has sufficient balance
+                if ($user->balance < $totalCost) {
+                    return back()->withErrors([
+                        'error' => 'Insufficient balance to process your request.',
+                    ]);
+                };
+
+                // Deduct the cost from the user's balance
+                $user->balance -= $totalCost;
+                $user->save();
+            }
 
             // Add the system's reply to the conversation
             $conversationHistory[] = [
