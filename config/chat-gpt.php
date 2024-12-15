@@ -26,9 +26,9 @@ return [
     */
 
     'models' => [
-        'gpt-4o' => ['input' => 0.000005, 'output' => 0.000015], // GPT-4o pricing
+        'gpt-4o' => ['input' => 0.000005, 'output' => 0.000015],
         'gpt-4' => ['input' => 0.000003, 'output' => 0.000004],
-        'gpt-4-turbo' => ['input' => 0.0000015, 'output' => 0.000002], // Example pricing
+        'gpt-4-turbo' => ['input' => 0.0000015, 'output' => 0.000002],
         'gpt-4o-mini' => ['input' => 0.0000012, 'output' => 0.0000018],
     ]
 ];
