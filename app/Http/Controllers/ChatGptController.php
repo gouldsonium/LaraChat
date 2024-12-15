@@ -50,35 +50,33 @@ class ChatGptController extends Controller
             // Get the system's reply
             $reply = $response->json('choices')[0]['message']['content'];
 
-            // IF
-            $usage = $response->json('usage'); // Assuming 'usage' includes 'prompt_tokens' and 'completion_tokens'
+            if($request->paid){
+                $usage = $response->json('usage'); // Assuming 'usage' includes 'prompt_tokens' and 'completion_tokens'
 
-            // Define pricing for input and output tokens based on the model
-            // Load pricing from the configuration
-            $pricingConfig = config('chat-gpt.models');
+                // Define pricing for input and output tokens based on the model
+                $pricingConfig = config('chat-gpt.models');
 
-            // Get the model's pricing or fall back to a default pricing
-            $pricing = $pricingConfig[$request->model] ?? ['input' => 0.0000015, 'output' => 0.000002];
+                // Get the model's pricing or fall back to a default pricing
+                $pricing = $pricingConfig[$request->model] ?? ['input' => 0.0000015, 'output' => 0.000002];
 
-            // Calculate the total cost
-            $inputCost = ($usage['prompt_tokens'] ?? 0) * $pricing['input'];
-            $outputCost = ($usage['completion_tokens'] ?? 0) * $pricing['output'];
-            $totalCost = $inputCost + $outputCost;
+                // Calculate the total cost
+                $inputCost = ($usage['prompt_tokens'] ?? 0) * $pricing['input'];
+                $outputCost = ($usage['completion_tokens'] ?? 0) * $pricing['output'];
+                $totalCost = $inputCost + $outputCost;
 
-            /** @var \App\Models\User $user */
-            $user = Auth::user();
-            // Check if the user has sufficient balance
-            if ($user->balance < $totalCost) {
-                return back()->withErrors([
-                    'error' => 'Insufficient balance to process your request.',
-                ]);
-            };
+                /** @var \App\Models\User $user */
+                $user = Auth::user();
+                // Check if the user has sufficient balance
+                if ($user->balance < $totalCost) {
+                    return back()->withErrors([
+                        'error' => 'Insufficient balance to process your request.',
+                    ]);
+                };
 
-            // Deduct the cost from the user's balance
-            $user->balance -= $totalCost;
-            $user->save();
-
-            // ENDIF
+                // Deduct the cost from the user's balance
+                $user->balance -= $totalCost;
+                $user->save();
+            }
 
             // Add the system's reply to the conversation
             $conversationHistory[] = [

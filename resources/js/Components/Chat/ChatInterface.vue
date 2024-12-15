@@ -15,12 +15,17 @@ const chatProps = defineProps({
         type: String,
         default: 'gpt-4o-mini',
     },
+    paid: {
+        type: Boolean,
+        default: false
+    }
 });
 
 // Initialize the Inertia form
 const form = useForm({
     message: '',
     model: chatProps.model,
+    paid: chatProps.paid
 });
 
 const isLoading = ref(false);

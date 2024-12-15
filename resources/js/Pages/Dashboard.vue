@@ -17,7 +17,7 @@ import ChatInterface from '@/Components/Chat/ChatInterface.vue';
         </template>
 
         <div class="max-w-7xl mx-auto">
-            <ChatInterface model="gpt-4o" />
+            <ChatInterface model="gpt-4o" :paid="true" />
         </div>
     </AppLayout>
 </template>
