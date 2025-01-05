@@ -39,11 +39,16 @@ class AssistantsController extends Controller
         $response = $chatGptService->createAssistant((object)$data); // Convert array to object
 
         if ($response->successful()) {
+            session()->flash('flash.banner', 'Assistant created successfully!');
+            session()->flash('flash.bannerStyle', 'success');
             return redirect()->back()->with('success', 'Assistant created successfully!');
         } else {
+            $errorDetails = $response->json()['error']['message'] ?? 'An unknown error occurred.';
+            session()->flash('flash.banner', 'Failed to create assistant. Please try again.');
+            session()->flash('flash.bannerStyle', 'danger');
+
             return back()->withErrors([
-                'error' => 'Failed to create assistant. Please try again.',
-                'details' => $response->json(),
+                'details' => $errorDetails
             ])->withInput();
         }
     }

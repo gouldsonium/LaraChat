@@ -9,19 +9,24 @@ import InputLabel from '@/Components/InputLabel.vue';
 import MultiSelectDropdown from '@/Components/MultiSelectDropdown.vue';
 
 const form = useForm({
-    model: '', // Default model
+    model: '',
     name: '',
     instructions: '',
     tools: [],
 });
 
+let errorDetails = null;
+
 const submitForm = () => {
+    errorDetails = null;
+
     form.post(route('assistants.create'), {
         onSuccess: () => {
             form.reset();
         },
-        onError: () => {
-            console.error('Error creating assistant');
+        onError: (formError) => {
+            console.error(formError);
+            errorDetails = formError.details;
         },
     });
 };
@@ -30,6 +35,9 @@ const submitForm = () => {
 <template>
     <form @submit.prevent="submitForm" class="space-y-4 p-4 bg-white dark:bg-gray-800 rounded shadow">
         <h3 class="text-lg font-bold mb-4 text-gray-800 dark:text-gray-200">Create Assistant</h3>
+        <div v-if="errorDetails" class="bg-red-500 text-white p-4 mb-4 rounded-md">
+            <pre>{{ errorDetails }}</pre>
+        </div>
         <div>
             <InputLabel for="model" value="Model" />
             <select
