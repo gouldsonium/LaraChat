@@ -25,4 +25,7 @@ Route::delete('/clear', [ChatGptController::class, 'clearConversation'])->name('
 Route::controller(AssistantsController::class)->prefix('assistants')->group(function () {
     Route::get('/', 'show')->name('assistants.show');
     Route::post('/create', 'create')->name('assistants.create');
+    Route::get('/manage/{id}', 'manage')->name('assistants.manage');
+    Route::put('/update/{id}', 'update')->name('assistants.update');
+    Route::delete('/delete/{id}', 'delete')->name('assistants.delete');
 });

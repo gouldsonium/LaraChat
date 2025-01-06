@@ -71,7 +71,7 @@ const isSelected = (value) => props.modelValue.includes(value);
           <input
             type="checkbox"
             :checked="isSelected(option.value)"
-            class="mr-2"
+            class="mr-2 text-primary"
             readonly
           />
           {{ option.text }}

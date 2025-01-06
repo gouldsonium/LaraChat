@@ -8,21 +8,37 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import MultiSelectDropdown from '@/Components/MultiSelectDropdown.vue';
 
+// Props
+const props = defineProps({
+    assistant: Object, // Optional prop for editing an existing assistant
+});
+
+// Initialize form with assistant data if provided
 const form = useForm({
-    model: '',
-    name: '',
-    instructions: '',
-    tools: [],
+    model: props.assistant?.model || '',
+    name: props.assistant?.name || '',
+    description: props.assistant?.description || '',
+    instructions: props.assistant?.instructions || '',
+    tools: props.assistant?.tools || [],
 });
 
 let errorDetails = null;
 
+// Determine endpoint based on presence of assistant
 const submitForm = () => {
     errorDetails = null;
 
-    form.post(route('assistants.create'), {
+    const endpoint = props.assistant
+        ? route('assistants.update', props.assistant.id)
+        : route('assistants.create');
+
+    const method = props.assistant ? 'put' : 'post';
+
+    form[method](endpoint, {
         onSuccess: () => {
-            form.reset();
+            if (!props.assistant) {
+                form.reset();  // Only reset the form if it's a create action
+            }
         },
         onError: (formError) => {
             console.error(formError);
@@ -34,7 +50,9 @@ const submitForm = () => {
 
 <template>
     <form @submit.prevent="submitForm" class="space-y-4 p-4 bg-white dark:bg-gray-800 rounded shadow">
-        <h3 class="text-lg font-bold mb-4 text-gray-800 dark:text-gray-200">Create Assistant</h3>
+        <h3 class="text-lg font-bold mb-4 text-gray-800 dark:text-gray-200">
+            {{ props.assistant ? 'Update Assistant' : 'Create Assistant' }}
+        </h3>
         <div v-if="errorDetails" class="bg-red-500 text-white p-4 mb-4 rounded-md">
             <pre>{{ errorDetails }}</pre>
         </div>
@@ -60,6 +78,21 @@ const submitForm = () => {
         </div>
 
         <div>
+            <InputLabel for="description" value="Description" />
+            <TextAreaInput
+                id="description"
+                v-model="form.description"
+                placeholder="Provide assistant description"
+                rows="4"
+                class="w-full"
+            />
+            <p class="text-sm text-gray-700 dark:text-gray-300">
+                {{ 512 - form.description.length }} Characters remaining
+            </p>
+            <InputError :message="form.errors.description" class="mt-2" />
+        </div>
+
+        <div>
             <InputLabel for="instructions" value="Instructions" />
             <TextAreaInput
                 id="instructions"
@@ -75,7 +108,7 @@ const submitForm = () => {
         </div>
 
         <div>
-            <InputLabel for="tools" value="Tools (comma-seperated)" />
+            <InputLabel for="tools" value="Tools (comma-separated)" />
             <MultiSelectDropdown
                 id="tools"
                 :options="[
@@ -94,7 +127,7 @@ const submitForm = () => {
                 Reset
             </SecondaryButton>
             <PrimaryButton :disabled="form.processing">
-                Create Assistant
+                {{ props.assistant ? 'Update Assistant' : 'Create Assistant' }}
             </PrimaryButton>
         </div>
     </form>

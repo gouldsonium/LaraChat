@@ -58,12 +58,50 @@ class ChatGptService
                 ->post('https://api.openai.com/v1/assistants', [
                     'model' => $data->model,
                     'name' => $data->name,
+                    'description' => $data->description,
                     'instructions' => $data->instructions,
                     'tools' => $data->tools,
                 ]);
         } catch (Exception $e) {
             Log::error("Assistant creation error: " . $e->getMessage());
             throw new Exception('Failed to create assistant. Please try again later.');
+        }
+    }
+
+    public function getAssistant(string $assistantID)
+    {
+        try {
+            return Http::withHeaders($this->getHeaders())->get('https://api.openai.com/v1/assistants/' . $assistantID);
+        } catch (Exception $e) {
+            Log::error("Get Assistant error: " . $e->getMessage());
+            throw new Exception('Failed to get assistant details. Please try again later.');
+        }
+    }
+
+    public function updateAssistant(string $assistantID, $data)
+    {
+        try {
+            return Http::withHeaders($this->getHeaders())
+                ->post('https://api.openai.com/v1/assistants/' . $assistantID, [
+                    'model' => $data->model,
+                    'name' => $data->name,
+                    'description' => $data->description,
+                    'instructions' => $data->instructions,
+                    'tools' => $data->tools,
+                ]);
+        } catch (Exception $e) {
+            Log::error("Assistant update error: " . $e->getMessage());
+            throw new Exception('Failed to update assistant. Please try again later.');
+        }
+    }
+
+    public function deleteAssistant(string $assistantID)
+    {
+        try {
+            return Http::withHeaders($this->getHeaders())->delete('https://api.openai.com/v1/assistants/' . $assistantID);
+        } catch (Exception $e) {
+            Log::error("Delte Assistant error: " . $e->getMessage());
+            throw new Exception('Failed to delete assistant. Please try again later.');
         }
     }
 }
