@@ -2,36 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use App\Services\ChatGptService;
 use App\Models\Assistant;
+use App\Http\Requests\ValidateAssistantRequest;
 
 class AssistantsController extends Controller
 {
-    protected function validateAssistant(Request $request): array
-    {
-        return $request->validate([
-            'model' => 'required|string',
-            'name' => 'required|string|max:255',
-            'description' => 'required|string|max:512',
-            'instructions' => 'required|string|max:2000',
-            'tools' => 'nullable|array',
-        ]);
-    }
-
     protected function formatTools(array $tools = null): array
     {
         return $tools ? array_map(fn($tool) => ['type' => $tool], $tools) : [];
-    }
-
-    protected function handleErrorResponse($response, string $defaultMessage)
-    {
-        $errorDetails = $response->json()['error']['message'] ?? $defaultMessage;
-        session()->flash('flash.banner', $defaultMessage);
-        session()->flash('flash.bannerStyle', 'danger');
-        return back()->withErrors(['details' => $errorDetails])->withInput();
     }
 
     public function show()
@@ -41,14 +22,19 @@ class AssistantsController extends Controller
         ]);
     }
 
-    public function create(Request $request, ChatGptService $chatGptService)
+    public function create(ValidateAssistantRequest $request, ChatGptService $chatGptService)
     {
-        $validatedData = $this->validateAssistant($request);
+        // Retrieve validated data from the request
+        $validatedData = $request->validated();
+
+        // Format tools using the validated data
         $tools = $this->formatTools($validatedData['tools']);
 
-        $response = $chatGptService->createAssistant((object)array_merge($validatedData, ['tools' => $tools]));
+        // Merge validated data with formatted tools and send to the service
+        $response = $chatGptService->createAssistant((object) array_merge($validatedData, ['tools' => $tools]));
 
         if ($response->successful()) {
+            // Use validated data for creating the Assistant record
             Assistant::create([
                 'assistant_id' => $response->json()['id'],
                 'name' => $validatedData['name'],
@@ -57,18 +43,22 @@ class AssistantsController extends Controller
                 'user_id' => Auth::id(),
             ]);
 
+            // Set success flash message
             session()->flash('flash.banner', 'Assistant created successfully!');
             session()->flash('flash.bannerStyle', 'success');
+
+            // Redirect back
             return redirect()->back();
         }
 
+        // Handle error response
         return $this->handleErrorResponse($response, 'Failed to create assistant. Please try again.');
     }
+
 
     public function manage($id, ChatGptService $chatGptService)
     {
         $assistant = Assistant::findOrFail($id);
-
         $response = $chatGptService->getAssistant($assistant->assistant_id);
 
         if ($response->successful()) {
@@ -85,13 +75,21 @@ class AssistantsController extends Controller
         return $this->handleErrorResponse($response, 'Failed to fetch assistant details.');
     }
 
-    public function update(Request $request, $id, ChatGptService $chatGptService)
+    public function update(ValidateAssistantRequest $request, $id, ChatGptService $chatGptService)
     {
-        $validatedData = $this->validateAssistant($request);
+        // Retrieve validated data from the request
+        $validatedData = $request->validated();
+
+        // Format tools using the validated data
         $tools = $this->formatTools($validatedData['tools']);
+
         $assistant = Assistant::findOrFail($id);
 
-        $response = $chatGptService->updateAssistant($assistant->assistant_id, (object)array_merge($validatedData, ['tools' => $tools]));
+        // Update the assistant via api
+        $response = $chatGptService->updateAssistant(
+            $assistant->assistant_id,
+            (object) array_merge($validatedData, ['tools' => $tools])
+        );
 
         if ($response->successful()) {
             $assistant->update([
@@ -108,6 +106,7 @@ class AssistantsController extends Controller
             return redirect()->back();
         }
 
+        // Handle error response
         return $this->handleErrorResponse($response, 'Failed to update assistant. Please try again.');
     }
 
@@ -125,7 +124,6 @@ class AssistantsController extends Controller
             return redirect()->route('assistants.show');
         }
 
-        return $this->handleErrorResponse($response, 'Failed to delte assistant. Please try again.');
-
+        return $this->handleErrorResponse($response, 'Failed to delete assistant. Please try again.');
     }
 }
