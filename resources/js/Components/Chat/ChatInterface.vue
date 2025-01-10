@@ -1,31 +1,36 @@
 <script setup>
-import { useForm, usePage } from '@inertiajs/vue3';
+import { useForm } from '@inertiajs/vue3';
 import { ref, onMounted, computed } from 'vue';
 import TextAreaInput from '../TextAreaInput.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import ChatMessage from '@/Components/Chat/ChatMessage.vue';
 
-const { props } = usePage();
-let conversationHistory = props.conversationHistory || [];
 
 // Accept a `model` prop
-const chatProps = defineProps({
-    model: {
-        type: String,
-        default: 'gpt-4o-mini',
-    },
+const props = defineProps({
     paid: {
         type: Boolean,
         default: false
+    },
+    completion: {
+        type: Object,
+        required: false
+    },
+    conversationHistory: {
+        type: Array,
+        required: true
     }
 });
+
+let conversationHistory = props.conversationHistory || [];
 
 // Initialize the Inertia form
 const form = useForm({
     message: '',
-    model: chatProps.model,
-    paid: chatProps.paid
+    paid: props.paid,
+    completion: props.completion,
+    conversationHistory: props.conversationHistory
 });
 
 const isLoading = ref(false);
@@ -38,33 +43,18 @@ const submitMessage = () => {
         content: form.message,
     });
 
-    form.post(route('chat.send'), {
+    form.post(route('completions.send', props.completion.id), {
         preserveScroll: true,
-        onSuccess: (page) => {
-            const reply = page.props.reply;
-
-            if (reply) {
-                conversationHistory.push({
-                    role: 'system',
-                    content: reply,
-                });
-            }
-
-            form.reset();
-        },
-        onError: () => {
-            console.error('Error sending message');
-        },
-        onFinish: () => {
-            isLoading.value = false;
-        },
+        onError: (err) => {
+            console.error(err);
+        }
     });
 };
 
 const clearChat = () => {
     isLoading.value = true;
 
-    form.delete(route('chat.clear'), {
+    form.delete(route('completions.clear', props.completion.id), {
         onSuccess: () => {
             conversationHistory.length = 0;
         },
@@ -97,7 +87,10 @@ const filteredConversationHistory = computed(() => {
 </script>
 
 <template>
-<div class="relative flex flex-col bg-gray-50 dark:bg-black min-h-screen">
+<div class="flex flex-col bg-gray-50 dark:bg-black ">
+    <p class="sticky right-0 top-0 text-xl text-primary self-end mr-5 mt-1" style="z-index: 100;">
+        Balance: ${{ (Math.floor($page.props.auth.user.balance * 100) / 100).toFixed(2)}}
+    </p>
     <!-- Chat Area -->
     <div class="flex-1 overflow-y-auto space-y-4 relative">
         <!-- Loading Overlay -->

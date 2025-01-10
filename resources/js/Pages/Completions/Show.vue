@@ -53,7 +53,7 @@ const toggleForm = () => {
                     <p class="my-2">{{ completion.description }}</p>
                     <p>Model: {{ completion.model }}</p>
                     <div class="flex justify-between items-center mt-5">
-                        <Link :href="route('dashboard')">
+                        <Link :href="route('completions.chat', completion.id)">
                             <SecondaryButton>Chat</SecondaryButton>
                         </Link>
                         <Link :href="route('completions.manage', completion.id)">

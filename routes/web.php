@@ -5,6 +5,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\ChatGptController;
 use App\Http\Controllers\AssistantsController;
 use App\Http\Controllers\CompletionsController;
+use App\Http\Controllers\DashboardController;
 
 Route::get('/', [ChatGptController::class, 'show'])->name('chat.show');
 Route::post('/', [ChatGptController::class, 'send'])->name('chat.send');
@@ -18,12 +19,7 @@ Route::middleware([
 ])->group(function () {
 
     // Dashboard route
-    Route::get('/dashboard', function () {
-        $conversationHistory = session('conversation_history', []);
-        return Inertia::render('Dashboard', [
-            'conversationHistory' => $conversationHistory,
-        ]);
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Completions routes
     Route::controller(CompletionsController::class)->prefix('completions')->group(function () {
@@ -32,6 +28,10 @@ Route::middleware([
         Route::get('/manage/{id}', 'manage')->name('completions.manage');
         Route::put('/update/{id}', 'update')->name('completions.update');
         Route::delete('/delete/{id}', 'delete')->name('completions.delete');
+
+        Route::get('/chat/{id}', 'chat')->name('completions.chat');
+        Route::post('/send/{id}', 'send')->name('completions.send');
+        Route::delete('/clear/{id}', 'clearConversation')->name('completions.clear');
     });
 
     // Assistants routes
