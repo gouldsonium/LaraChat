@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use Inertia\Inertia;
-use App\Models\Completion;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Requests\ValidateCompletionRequest;
 use Illuminate\Http\Request;
-use App\Services\ChatGptService;
+use Inertia\Inertia;
 use Illuminate\Support\Facades\Log;
+use App\Http\Requests\ValidateCompletionRequest;
+use App\Models\Completion;
+use App\Services\ChatGptService;
 
 class CompletionsController extends Controller
 {

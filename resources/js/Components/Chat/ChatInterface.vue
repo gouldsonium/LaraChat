@@ -20,7 +20,15 @@ const props = defineProps({
     conversationHistory: {
         type: Array,
         required: true
-    }
+    },
+    assistant: {
+        type: Object,
+        required: false
+    },
+    threadId: {
+        type: String,
+        required: false
+    },
 });
 
 let conversationHistory = props.conversationHistory || [];
@@ -29,8 +37,10 @@ let conversationHistory = props.conversationHistory || [];
 const form = useForm({
     message: '',
     paid: props.paid,
+    conversationHistory: props.conversationHistory,
     completion: props.completion,
-    conversationHistory: props.conversationHistory
+    assistant_id: props.assistant?.assistant_id,
+    thread_id: props.threadId
 });
 
 const isLoading = ref(false);
@@ -43,25 +53,46 @@ const submitMessage = () => {
         content: form.message,
     });
 
-    form.post(route('completions.send', props.completion.id), {
-        preserveScroll: true,
-        onError: (err) => {
-            console.error(err);
-        }
-    });
+    if(form.completion){
+        form.post(route('completions.send', props.completion.id), {
+            preserveScroll: true,
+            onError: (err) => {
+                console.error(err);
+            }
+        });
+    } else {
+        form.post(route('assistants.send'), {
+            preserveScroll: true,
+            onError: (err) => {
+                console.error(err);
+            }
+        });
+    }
 };
 
 const clearChat = () => {
     isLoading.value = true;
 
-    form.delete(route('completions.clear', props.completion.id), {
-        onSuccess: () => {
-            conversationHistory.length = 0;
-        },
-        onFinish: () => {
-            isLoading.value = false;
-        },
-    });
+    if(form.completion){
+        form.delete(route('completions.clear', props.completion.id), {
+            onSuccess: () => {
+                conversationHistory.length = 0;
+            },
+            onFinish: () => {
+                isLoading.value = false;
+            },
+        });
+    } else {
+        form.delete(route('assistants.clear', props.assistant.id), {
+            onSuccess: () => {
+                conversationHistory.length = 0;
+            },
+            onFinish: () => {
+                isLoading.value = false;
+            },
+        });
+    }
+
 };
 
 const handleKeydown = (event) => {

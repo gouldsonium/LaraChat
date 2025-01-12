@@ -104,4 +104,95 @@ class ChatGptService
             throw new Exception('Failed to delete assistant. Please try again later.');
         }
     }
+
+    public function createThread()
+    {
+        try {
+            return Http::withHeaders($this->getHeaders())->post('https://api.openai.com/v1/threads');
+        } catch (Exception $e) {
+            Log::error("Create Thread error: " . $e->getMessage());
+            throw new Exception('Failed to create thread. Please try again later.');
+        }
+    }
+
+    public function getThreadMessages(string $threadId)
+    {
+        try {
+            return Http::withHeaders($this->getHeaders())->get('https://api.openai.com/v1/threads/' . $threadId . '/messages');
+        } catch (Exception $e) {
+            Log::error("Fetch Thread error: " . $e->getMessage());
+            throw new Exception('Failed to fetch thread. Please try again later.');
+        }
+    }
+
+    public function createThreadMessage(string $threadId, string $message)
+    {
+        try {
+            return Http::withHeaders($this->getHeaders())
+                ->post('https://api.openai.com/v1/threads/' . $threadId . '/messages', [
+                    'role' => 'user',
+                    'content' => $message
+                ]);
+        } catch (Exception $e) {
+            Log::error("Create Thread Message Error: " . $e->getMessage());
+            throw new Exception('Failed to create message in thread. Please try again later.');
+        }
+    }
+
+    public function createRun(string $threadId, string $assistantID)
+    {
+        try {
+            return Http::withHeaders($this->getHeaders())
+                ->post('https://api.openai.com/v1/threads/' . $threadId . '/runs', [
+                    'assistant_id' => $assistantID,
+                ]);
+        } catch (Exception $e) {
+            Log::error("Run Thread error: " . $e->getMessage());
+            throw new Exception('Failed to run thread. Please try again later.');
+        }
+    }
+
+    public function deleteThread(string $threadId)
+    {
+        try {
+            return Http::withHeaders($this->getHeaders())->delete('https://api.openai.com/v1/threads/' . $threadId);
+        } catch (Exception $e) {
+            Log::error("Delete Thread error: " . $e->getMessage());
+            throw new Exception('Failed to delete thread. Please try again later.');
+        }
+    }
+    public function pollRunStatus(string $threadId, string $runId): string
+    {
+        $timeout = 5; // Maximum time to wait for the run to complete (in seconds)
+        $interval = 1; // Interval between status checks (in seconds)
+
+        // Poll the status until it is completed or timeout occurs
+        $start = time();
+        while (time() - $start < $timeout) {
+            // Make the API request to get the status of the run
+            $response = Http::withHeaders($this->getHeaders())
+                ->get("https://api.openai.com/v1/threads/{$threadId}/runs/{$runId}");
+
+            if ($response->successful()) {
+                $status = $response->json()['status'];  // Check the status from the response
+
+                if ($status === 'completed') {
+                    return 'completed';
+                }
+
+                // If it's still queued or processing, wait for the next interval
+                sleep($interval);
+            } else {
+                // Handle any errors in the API response (e.g., invalid status)
+                Log::error('Error fetching run status', [
+                    'thread_id' => $threadId,
+                    'run_id' => $runId,
+                    'error' => $response->body(),
+                ]);
+                break;
+            }
+        }
+
+        return 'timeout';  // If we reach the timeout, return 'timeout'
+    }
 }

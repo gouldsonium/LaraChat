@@ -53,7 +53,7 @@ const toggleForm = () => {
                     <p class="my-2">{{ assistant.description }}</p>
                     <p>Model: {{ assistant.model }}</p>
                     <div class="flex justify-between items-center mt-5">
-                        <Link :href="route('dashboard')">
+                        <Link :href="route('assistants.chat', assistant.id)">
                             <SecondaryButton>Chat</SecondaryButton>
                         </Link>
                         <Link :href="route('assistants.manage', assistant.id)">
