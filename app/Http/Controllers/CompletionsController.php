@@ -59,9 +59,6 @@ class CompletionsController extends Controller
         session()->flash('flash.bannerStyle', 'success');
 
         return redirect()->back();
-
-        // Handle error response
-        // return $this->handleErrorResponse($response, 'Failed to update assistant. Please try again.');
     }
 
     public function delete($id)
@@ -73,8 +70,6 @@ class CompletionsController extends Controller
         session()->flash('flash.bannerStyle', 'success');
 
         return redirect()->route('completions.show');
-
-        // return $this->handleErrorResponse($response, 'Failed to delte assistant. Please try again.');
     }
 
     public function chat(int $id)

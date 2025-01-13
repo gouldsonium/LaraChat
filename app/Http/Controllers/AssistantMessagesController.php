@@ -91,22 +91,12 @@ class AssistantMessagesController extends Controller
 
             if ($createMessageResponse->successful()) {
                 // Step 2: Create the run
-                $createRunResponse = $chatGptService->createRun(
+                $chatGptService->createRunWithStream(
                     $request->input('thread_id'),
                     $request->input('assistant_id'),
                 );
 
-                if ($createRunResponse->successful()) {
-                    $runId = $createRunResponse->json()['id'];  // Assuming the response includes the run ID
-
-                    // Step 3: Poll for the run status
-                    $status = $chatGptService->pollRunStatus($request->input('thread_id'), $runId);
-
-                    // After the run is created, reload the page
-                    if ($status === 'completed') {
-                        return Inertia::location(url()->previous()); // Redirect without full reload
-                    };
-                }
+                return Inertia::location(url()->previous()); // Redirect without full reload
             };
 
         } catch (\Exception $e) {
@@ -134,5 +124,7 @@ class AssistantMessagesController extends Controller
             $thread->delete();
             return Inertia::location(url()->previous()); // Redirect without full reload
         }
+
+        $this->handleErrorResponse($response, 'Error deleting the thread');
     }
 }

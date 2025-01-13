@@ -163,7 +163,7 @@ class ChatGptService
     }
     public function pollRunStatus(string $threadId, string $runId): string
     {
-        $timeout = 5; // Maximum time to wait for the run to complete (in seconds)
+        $timeout = 10; // Maximum time to wait for the run to complete (in seconds)
         $interval = 1; // Interval between status checks (in seconds)
 
         // Poll the status until it is completed or timeout occurs
@@ -194,5 +194,33 @@ class ChatGptService
         }
 
         return 'timeout';  // If we reach the timeout, return 'timeout'
+    }
+
+    public function createRunWithStream(string $threadId, string $assistantID)
+    {
+        try {
+            $client = new \GuzzleHttp\Client();
+            $response = $client->post('https://api.openai.com/v1/threads/' . $threadId . '/runs', [
+                'headers' => $this->getHeaders(),
+                'json' => [
+                    'assistant_id' => $assistantID,
+                    'stream' => true, // Enable streaming
+                ],
+                'stream' => true,
+            ]);
+
+            $body = $response->getBody();
+            $result = '';
+
+            while (!$body->eof()) {
+                $chunk = $body->read(1024); // Read the stream in chunks
+                $result .= $chunk; // Accumulate the chunks into the final response
+            }
+
+            return $result; // Return the complete response
+        } catch (\Exception $e) {
+            Log::error("Run Thread with Stream error: " . $e->getMessage());
+            throw new Exception('Failed to run thread with streaming. Please try again later.');
+        }
     }
 }
