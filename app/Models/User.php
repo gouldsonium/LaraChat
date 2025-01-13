@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -13,8 +12,6 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
     use HasApiTokens;
-
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
     use HasProfilePhoto;
     use Notifiable;
@@ -64,5 +61,21 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function assistantThreads()
+    {
+        return $this->hasMany(AssistantThread::class);
+    }
+
+    /**
+     * Get a specific thread for the user based on assistant_id.
+     *
+     * @param int $assistantId
+     * @return \App\Models\AssistantThread|null
+     */
+    public function getThreadByAssistantId(int $assistantId)
+    {
+        return $this->assistantThreads()->where('assistant_id', $assistantId)->first();
     }
 }
