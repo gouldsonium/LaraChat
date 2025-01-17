@@ -63,8 +63,7 @@ class ChatGptService
                     'tools' => $data->tools,
                 ]);
         } catch (Exception $e) {
-            Log::error("Assistant creation error: " . $e->getMessage());
-            throw new Exception('Failed to create assistant. Please try again later.');
+            throw new Exception($e->getMessage());
         }
     }
 
@@ -90,8 +89,7 @@ class ChatGptService
                     'tools' => $data->tools,
                 ]);
         } catch (Exception $e) {
-            Log::error("Assistant update error: " . $e->getMessage());
-            throw new Exception('Failed to update assistant. Please try again later.');
+            throw new Exception($e->getMessage());
         }
     }
 
@@ -100,8 +98,7 @@ class ChatGptService
         try {
             return Http::withHeaders($this->getHeaders())->delete('https://api.openai.com/v1/assistants/' . $assistantID);
         } catch (Exception $e) {
-            Log::error("Delte Assistant error: " . $e->getMessage());
-            throw new Exception('Failed to delete assistant. Please try again later.');
+            throw new Exception($e->getMessage());
         }
     }
 

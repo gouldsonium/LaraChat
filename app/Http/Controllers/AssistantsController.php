@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
-use App\Services\ChatGptService;
 use App\Models\Assistant;
 use App\Http\Requests\ValidateAssistantRequest;
+use App\Actions\Assistants\{
+    GetAssistant as GetAssistantAction,
+    CreateAssistant as CreateAssistantAction,
+    UpdateAssistant as UpdateAssistantAction,
+    DeleteAssistant as DeleteAssistantAction
+};
 
 class AssistantsController extends Controller
 {
@@ -22,108 +26,61 @@ class AssistantsController extends Controller
         ]);
     }
 
-    public function create(ValidateAssistantRequest $request, ChatGptService $chatGptService)
+    public function create(ValidateAssistantRequest $request, CreateAssistantAction $createAssistantAction)
     {
-        // Retrieve validated data from the request
-        $validatedData = $request->validated();
+        try {
+            $validatedData = $request->validated();
+            $data = array_merge($validatedData, ['tools' => $this->formatTools($validatedData['tools'])]);
 
-        // Format tools using the validated data
-        $tools = $this->formatTools($validatedData['tools']);
+            $createAssistantAction($data);
 
-        // Merge validated data with formatted tools and send to the service
-        $response = $chatGptService->createAssistant((object) array_merge($validatedData, ['tools' => $tools]));
-
-        if ($response->successful()) {
-            // Use validated data for creating the Assistant record
-            Assistant::create([
-                'assistant_id' => $response->json()['id'],
-                'name' => $validatedData['name'],
-                'description' => $validatedData['description'],
-                'model' => $validatedData['model'],
-                'user_id' => Auth::id(),
-            ]);
-
-            // Set success flash message
-            session()->flash('flash.banner', 'Assistant created successfully!');
-            session()->flash('flash.bannerStyle', 'success');
-
-            // Redirect back
+            $this->showMessage('Assistant created successfully!');
             return redirect()->back();
+        } catch (\Exception $e) {
+            $this->showMessage($e->getMessage(), 'danger');
+            return redirect()->back()->withErrors(['error' => $e->getMessage()])->withInput();
         }
-
-        // Handle error response
-        return $this->handleErrorResponse($response, 'Failed to create assistant. Please try again.');
     }
 
-
-    public function manage($id, ChatGptService $chatGptService)
+    public function manage($id, GetAssistantAction $getAssistantAction)
     {
-        $assistant = Assistant::findOrFail($id);
-        $response = $chatGptService->getAssistant($assistant->assistant_id);
-
-        if ($response->successful()) {
-            $jsonResponse = $response->json();
-
+        try {
+            $assistant = $getAssistantAction($id);
             return Inertia::render('Assistants/Manage', [
-                'assistant' => array_merge($assistant->toArray(), [
-                    'instructions' => $jsonResponse['instructions'],
-                    'tools' => array_column($jsonResponse['tools'], 'type'),
-                ]),
+                'assistant' => $assistant
             ]);
-        }
-
-        return $this->handleErrorResponse($response, 'Failed to fetch assistant details.');
-    }
-
-    public function update(ValidateAssistantRequest $request, $id, ChatGptService $chatGptService)
-    {
-        // Retrieve validated data from the request
-        $validatedData = $request->validated();
-
-        // Format tools using the validated data
-        $tools = $this->formatTools($validatedData['tools']);
-
-        $assistant = Assistant::findOrFail($id);
-
-        // Update the assistant via api
-        $response = $chatGptService->updateAssistant(
-            $assistant->assistant_id,
-            (object) array_merge($validatedData, ['tools' => $tools])
-        );
-
-        if ($response->successful()) {
-            $assistant->update([
-                'model' => $validatedData['model'],
-                'name' => $validatedData['name'],
-                'description' => $validatedData['description'],
-            ]);
-
-            $assistant->refresh();
-
-            session()->flash('flash.banner', 'Assistant updated successfully!');
-            session()->flash('flash.bannerStyle', 'success');
-
-            return redirect()->back();
-        }
-
-        // Handle error response
-        return $this->handleErrorResponse($response, 'Failed to update assistant. Please try again.');
-    }
-
-    public function delete($id, ChatGptService $chatGptService)
-    {
-        $assistant = Assistant::findOrFail($id);
-        $response = $chatGptService->deleteAssistant($assistant->assistant_id);
-
-        if ($response->successful()) {
-            $assistant->delete();
-
-            session()->flash('flash.banner', 'Assistant deleted successfully!');
-            session()->flash('flash.bannerStyle', 'success');
-
+        } catch (\Exception $e) {
+            $this->showMessage($e->getMessage(), 'danger');
             return redirect()->route('assistants.show');
         }
+    }
 
-        return $this->handleErrorResponse($response, 'Failed to delete assistant. Please try again.');
+    public function update(ValidateAssistantRequest $request, int $id, UpdateAssistantAction $updateAssistantAction)
+    {
+        try {
+            $validatedData = $request->validated();
+            $data = array_merge($validatedData, ['tools' => $this->formatTools($validatedData['tools'])]);
+
+            $updateAssistantAction($id, $data);
+
+            $this->showMessage('Assistant updated successfully!');
+            return redirect()->back();
+        } catch (\Exception $e) {
+            $this->showMessage($e->getMessage(), 'danger');
+            return redirect()->back()->withErrors(['error' => $e->getMessage()])->withInput();
+        }
+    }
+
+    public function delete($id, DeleteAssistantAction $deleteAssistantAction)
+    {
+        try {
+            $deleteAssistantAction($id);
+
+            $this->showMessage('Assistant deleted successfully!');
+            return redirect()->route('assistants.show');
+        } catch (\Exception $e) {
+            $this->showMessage($e->getMessage(), 'danger');
+            return redirect()->back();
+        }
     }
 }
