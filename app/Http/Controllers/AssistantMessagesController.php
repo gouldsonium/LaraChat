@@ -5,67 +5,32 @@ namespace App\Http\Controllers;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Http\Request;
+use App\Http\Requests\ValidateChatRequest;
 use App\Models\Assistant;
-use App\Models\AssistantThread;
 use App\Models\User;
-use App\Services\ChatGptService;
+use App\Actions\Threads\{
+    CreateThread as CreateThreadAction,
+    GetThreadMessages as GetThreadMessagesAction,
+    DeleteThread as DeleteThreadAction,
+    SendThreadMessage as SendThreadMessageAction
+};
 
 class AssistantMessagesController extends Controller
 {
-    protected function transformMessagesToConversationHistory(array $messages): array
+    public function chat(int $id, CreateThreadAction $createThreadAction, GetThreadMessagesAction $getThreadMessages)
     {
-        $conversationHistory = [];
+        $assistant = Assistant::findOrFail($id);
 
-        // Reverse the messages data array
-        $messagesData = array_reverse($messages['data']);
-
-        foreach ($messagesData as $message) {
-            // Extract the role
-            $role = $message['role'];
-
-            // Extract the content, handling the content array
-            $content = collect($message['content'])
-                ->pluck('text.value')
-                ->implode(' '); // Join multiple content parts into a single string if necessary
-
-            // Add the transformed message to the conversation history
-            $conversationHistory[] = [
-                'role' => $role,
-                'content' => $content,
-            ];
-        }
-
-        return $conversationHistory;
-    }
-
-    public function chat(int $id, ChatGptService $chatGptService)
-    {
         /** @var User $user */
         $user = Auth::user();
-        $assistant = Assistant::findOrFail($id);
         $thread = $user->getThreadByAssistantId($id);
 
-        if(!$thread){
-            $createThreadResponse = $chatGptService->createThread();
-            if ($createThreadResponse->successful()) {
-                $threadId = $createThreadResponse->json('id');
-
-                $thread = AssistantThread::create([
-                    'thread_id' => $threadId,
-                    'assistant_id' => $id,
-                    'user_id' => Auth::id()
-                ]);
-            } else {
-                // Log the error for debugging if response is not successful
-                Log::error('Failed to fetch response from OpenAI', [
-                    'response' => $createThreadResponse->body(),
-                ]);
-            }
+        // If no thread exists, create one using the provided action
+        if (!$thread) {
+            $thread = $createThreadAction($id);
         }
 
-        $response = $chatGptService->getThreadMessages($thread->thread_id);
-        $conversationHistory = $this->transformMessagesToConversationHistory($response->json());
+        $conversationHistory = $getThreadMessages($thread->thread_id);
 
         return Inertia::render('Assistants/Chat', [
             'assistant' => $assistant,
@@ -74,30 +39,21 @@ class AssistantMessagesController extends Controller
         ]);
     }
 
-    public function send(Request $request, ChatGptService $chatGptService)
+    public function send(int $assistantId, ValidateChatRequest $request, SendThreadMessageAction $sendThreadMessage)
     {
         try {
-            $request->validate([
-                'message' => 'required|string',
-                'thread_id' => 'required|string',
-                'assistant_id' => 'required|string'
+            $assistant = Assistant::findOrFail($assistantId);
+            $validatedData = $request->validated();
+
+            /** @var User $user */
+            $user = Auth::user();
+            $thread = $user->getThreadByAssistantId($assistantId);
+
+            $reply = $sendThreadMessage($thread->thread_id, $assistant->assistant_id, $validatedData['message']);
+
+            return response()->json([
+                'reply' => $reply
             ]);
-
-            // Step 1: Create the message in the thread
-            $createMessageResponse = $chatGptService->createThreadMessage(
-                $request->input('thread_id'),
-                $request->input('message')
-            );
-
-            if ($createMessageResponse->successful()) {
-                // Step 2: Create the run
-                $chatGptService->createRunWithStream(
-                    $request->input('thread_id'),
-                    $request->input('assistant_id'),
-                );
-
-                return Inertia::location(url()->previous()); // Redirect without full reload
-            };
 
         } catch (\Exception $e) {
             // Catch and log any exception for debugging
@@ -112,19 +68,10 @@ class AssistantMessagesController extends Controller
         }
     }
 
-    public function deleteThread(int $id, ChatGptService $chatGptService)
+    public function deleteThread(int $id, DeleteThreadAction $deleteThreadAction, CreateThreadAction $createThreadAction)
     {
-        /** @var User $user */
-        $user = Auth::user();
-        $thread = $user->getThreadByAssistantId($id);
-
-        $response = $chatGptService->deleteThread($thread->thread_id);
-
-        if($response->successful()){
-            $thread->delete();
-            return Inertia::location(url()->previous()); // Redirect without full reload
-        }
-
-        $this->handleErrorResponse($response, 'Error deleting the thread');
+        $deleteThreadAction($id);
+        $createThreadAction($id); # Create empty thread to replace the old one
+        return response()->json(['message' => 'Thread deleted'], 200);
     }
 }

@@ -42,12 +42,11 @@ Route::middleware([
         Route::get('/manage/{id}', 'manage')->name('assistants.manage');
         Route::put('/update/{id}', 'update')->name('assistants.update');
         Route::delete('/delete/{id}', 'delete')->name('assistants.delete');
-
     });
 
     Route::controller(AssistantMessagesController::class)->prefix('assistants')->group(function () {
         Route::get('/chat/{id}', 'chat')->name('assistants.chat');
-        Route::post('/send', 'send')->name('assistants.send');
+        Route::post('/send/{id}', 'send')->name('assistants.send');
         Route::delete('/clear/{id}', 'deleteThread')->name('assistants.clear');
     });
 });

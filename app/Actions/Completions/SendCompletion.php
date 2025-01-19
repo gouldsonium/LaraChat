@@ -40,6 +40,7 @@ class SendCompletion
 
                 // Save the conversation history in the session
                 session(['conversation_history_' . $id => $conversationHistory]);
+                return $reply;
             } else {
                 $errorDetails = $response->json()['error']['message'] ?? 'Failed to send completion';
                 throw new Exception($errorDetails);

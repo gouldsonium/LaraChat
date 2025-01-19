@@ -6,6 +6,7 @@ use Inertia\Inertia;
 use Illuminate\Http\Request;
 use App\Models\Completion;
 use App\Http\Requests\ValidateCompletionRequest;
+use App\Http\Requests\ValidateChatRequest;
 use App\Actions\Completions\{
     CreateCompletion as CreateCompletionAction,
     GetCompletionChat as GetCompletionChatAction,
@@ -61,16 +62,15 @@ class CompletionsController extends Controller
         ]);
     }
 
-    public function send(Request $request, int $id, SendCompletionAction $sendCompletionAction)
+    public function send(ValidateChatRequest $request, int $id, SendCompletionAction $sendCompletionAction)
     {
         try {
-            $request->validate([
-                'message' => 'required|string',
+            $validatedData = $request->validated();
+            $reply = $sendCompletionAction($id, $validatedData['message']);
+
+            return response()->json([
+                'reply' => $reply
             ]);
-
-            $sendCompletionAction($id, $request->input('message'));
-            return Inertia::location(url()->previous()); // Redirect without full reload
-
         } catch (\Exception $e) {
             $this->showMessage($e->getMessage(), 'danger');
             return redirect()->back()->withErrors(['error' => $e->getMessage()])->withInput();
@@ -80,6 +80,6 @@ class CompletionsController extends Controller
     public function clearConversation(Request $request, int $id)
     {
         $request->session()->forget('conversation_history_' . $id);
-        return redirect()->back();
+        return response()->json(['message' => 'Conversation cleared successfully'], 200);
     }
 }
