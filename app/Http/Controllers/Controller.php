@@ -11,4 +11,10 @@ abstract class Controller
         session()->flash('flash.bannerStyle', 'danger');
         return back()->withErrors(['details' => $errorDetails])->withInput();
     }
+
+    protected function showMessage($message, $style = 'success')
+    {
+        session()->flash('flash.banner', $message);
+        session()->flash('flash.bannerStyle', $style);
+    }
 }

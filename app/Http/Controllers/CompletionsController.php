@@ -2,148 +2,84 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Log;
-use App\Http\Requests\ValidateCompletionRequest;
+use Illuminate\Http\Request;
 use App\Models\Completion;
-use App\Services\ChatGptService;
+use App\Http\Requests\ValidateCompletionRequest;
+use App\Http\Requests\ValidateChatRequest;
+use App\Actions\Completions\{
+    CreateCompletion as CreateCompletionAction,
+    GetCompletionChat as GetCompletionChatAction,
+    UpdateCompletion as UpdateCompletionAction,
+    DeleteCompletion as DeleteCompletionAction,
+    SendCompletion as SendCompletionAction
+};
 
 class CompletionsController extends Controller
 {
     public function show()
     {
-        $completions = Completion::all();
         return Inertia::render('Completions/Show', [
-            'completions' => $completions
+            'completions' => Completion::all()
         ]);
     }
 
-    public function create(ValidateCompletionRequest $request)
+    public function create(ValidateCompletionRequest $request, CreateCompletionAction $createCompletionAction)
     {
-        Completion::create([
-            'name' => $request->input('name'),
-            'description' => $request->input('description'),
-            'model' => $request->input('model'),
-            'instructions' => $request->input('instructions'),
-            'user_id' => Auth::id(),
-        ]);
-
-        session()->flash('flash.banner', 'Completion created successfully!');
-        session()->flash('flash.bannerStyle', 'success');
+        $createCompletionAction($request);
+        $this->showMessage('Completion created successfully!');
         return redirect()->back();
     }
 
-    public function manage($id)
+    public function manage($id, GetCompletionChatAction $getCompletionChatAction)
     {
-        $completion = Completion::findOrFail($id);
+        $data = $getCompletionChatAction($id);
         return Inertia::render('Completions/Manage', [
-            'completion' => $completion
+            'completion' => $data['completion']
         ]);
     }
 
-    public function update(ValidateCompletionRequest $request, $id)
+    public function update(ValidateCompletionRequest $request, int $id, UpdateCompletionAction $updateCompletionAction)
     {
-        $completion = Completion::findOrFail($id);
-        $completion->update([
-            'name' => $request->input('name'),
-            'description' => $request->input('description'),
-            'model' => $request->input('model'),
-            'instructions' => $request->input('instructions'),
-        ]);
-
-        $completion->refresh();
-
-        session()->flash('flash.banner', 'Completion updated successfully!');
-        session()->flash('flash.bannerStyle', 'success');
-
+        $updateCompletionAction($id, $request);
+        $this->showMessage('Completion updated successfully!');
         return redirect()->back();
     }
 
-    public function delete($id)
+    public function delete($id, DeleteCompletionAction $deleteCompletionAction)
     {
-        $completion = Completion::findOrFail($id);
-        $completion->delete();
-
-        session()->flash('flash.banner', 'Completion deleted successfully!');
-        session()->flash('flash.bannerStyle', 'success');
-
+        $deleteCompletionAction($id);
+        $this->showMessage('Completion deleted successfully!');
         return redirect()->route('completions.show');
     }
 
-    public function chat(int $id)
+    public function chat(int $id, GetCompletionChatAction $getCompletionChatAction)
     {
-        $completion = Completion::findOrFail($id);
-
-        // Retrieve the previous conversation from the session
-        $conversationHistory = session('conversation_history_' . $id, []);
-
-        // Add full system message to the conversation if it's the first message
-        if (empty($conversationHistory)) {
-            $systemMessage = $completion->instructions;
-            $conversationHistory[] = ['role' => 'system', 'content' => $systemMessage];
-            session(['conversation_history_' . $id => $conversationHistory]);
-        }
+        $data = $getCompletionChatAction($id);
         return Inertia::render('Completions/Chat', [
-            'completion' => $completion,
-            'conversationHistory' => $conversationHistory
+            'completion' => $data['completion'],
+            'conversationHistory' => $data['conversationHistory']
         ]);
     }
 
-    public function send(Request $request, int $id, ChatGptService $chatGptService)
+    public function send(ValidateChatRequest $request, int $id, SendCompletionAction $sendCompletionAction)
     {
         try {
-            $request->validate([
-                'message' => 'required|string',
+            $validatedData = $request->validated();
+            $reply = $sendCompletionAction($id, $validatedData['message']);
+
+            return response()->json([
+                'reply' => $reply
             ]);
-
-            $completion = Completion::findOrFail($id);
-            $conversationHistory = session('conversation_history_' . $id, []);
-
-            $conversationHistory[] = [
-                'role' => 'user',
-                'content' => $request->input('message'),
-            ];
-
-            $response = $chatGptService->createCompletions($conversationHistory, $completion->model);
-
-            if ($response->successful()) {
-                // Get the system's reply
-                $reply = $response->json('choices')[0]['message']['content'];
-
-                $conversationHistory[] = [
-                    'role' => 'system',
-                    'content' => $reply,
-                ];
-
-                // Save the conversation history in the session
-                session(['conversation_history_' . $id => $conversationHistory]);
-
-                return Inertia::location(url()->previous()); // Redirect without full reload
-            } else {
-                // Log the error for debugging if response is not successful
-                Log::error('Failed to fetch response from OpenAI', [
-                    'response' => $response->body(),
-                ]);
-            }
-
         } catch (\Exception $e) {
-            // Catch and log any exception for debugging
-            Log::error('Error in send method', [
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return back()->withErrors([
-                'error' => $e->getMessage(),
-            ]);
+            $this->showMessage($e->getMessage(), 'danger');
+            return redirect()->back()->withErrors(['error' => $e->getMessage()])->withInput();
         }
     }
 
     public function clearConversation(Request $request, int $id)
     {
         $request->session()->forget('conversation_history_' . $id);
-        return redirect()->back();
+        return response()->json(['message' => 'Conversation cleared successfully'], 200);
     }
 }

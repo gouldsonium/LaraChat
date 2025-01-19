@@ -64,6 +64,7 @@ const submitForm = () => {
             <select
                 id="model"
                 v-model="form.model"
+                name="model"
                 class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
             >
                 <option value="" disabled selected hidden>Select a model</option>
@@ -76,7 +77,7 @@ const submitForm = () => {
 
         <div>
             <InputLabel for="name" value="Assistant Name" />
-            <TextInput id="name" v-model="form.name" placeholder="Assistant Name" class="w-full" />
+            <TextInput id="name" v-model="form.name" placeholder="Assistant Name" class="w-full" name="name" autocomplete="name" />
             <InputError :message="form.errors.name" class="mt-2" />
         </div>
 
@@ -84,6 +85,7 @@ const submitForm = () => {
             <InputLabel for="description" value="Description" />
             <TextAreaInput
                 id="description"
+                name="description"
                 v-model="form.description"
                 placeholder="Provide assistant description"
                 rows="4"
@@ -111,7 +113,7 @@ const submitForm = () => {
         </div>
 
         <div>
-            <InputLabel for="tools" value="Tools (comma-separated)" />
+            <InputLabel value="Tools (comma-separated)" />
             <MultiSelectDropdown
                 id="tools"
                 :options="[

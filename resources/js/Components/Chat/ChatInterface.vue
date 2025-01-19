@@ -1,13 +1,11 @@
 <script setup>
-import { useForm } from '@inertiajs/vue3';
+import axios from 'axios';
 import { ref, onMounted, computed } from 'vue';
 import TextAreaInput from '../TextAreaInput.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import ChatMessage from '@/Components/Chat/ChatMessage.vue';
 
-
-// Accept a `model` prop
 const props = defineProps({
   paid: {
     type: Boolean,
@@ -32,71 +30,61 @@ const props = defineProps({
 });
 
 let conversationHistory = props.conversationHistory || [];
-
-// Initialize the Inertia form
-const form = useForm({
-  message: '',
-  paid: props.paid,
-  conversationHistory: props.conversationHistory,
-  completion: props.completion,
-  assistant_id: props.assistant?.assistant_id,
-  thread_id: props.threadId
-});
-
+const message = ref('');
 const isLoading = ref(false);
 
-const submitMessage = () => {
-  isLoading.value = true;
+const submitMessage = async () => {
+  if (!message.value.trim()) return;
 
+  isLoading.value = true;
   conversationHistory.push({
     role: 'user',
-    content: form.message,
+    content: message.value,
   });
 
-  if (form.completion) {
-    form.post(route('completions.send', props.completion.id), {
-      preserveScroll: true,
-      onError: (err) => {
-        console.error(err);
-      }
+  try {
+    const payload = {
+      message: message.value,
+      paid: props.paid,
+      conversationHistory,
+      completion: props.completion,
+      assistant_id: props.assistant?.assistant_id,
+      thread_id: props.threadId,
+    };
+
+    const url = props.completion
+      ? route('completions.send', props.completion.id)
+      : route('assistants.send', props.assistant.id);
+
+    const res = await axios.post(url, payload);
+
+    conversationHistory.push({
+      role: 'system',
+      content: res.data.reply,
     });
-  } else {
-    form.post(route('assistants.send'), {
-      preserveScroll: true,
-      onError: (err) => {
-        console.error(err);
-      }
-    });
+  } catch (error) {
+    console.error('Error sending message:', error);
+  } finally {
+    isLoading.value = false;
+    message.value = '';
   }
 };
 
-const clearChat = () => {
+const clearChat = async () => {
   isLoading.value = true;
 
-  if (form.completion) {
-    form.delete(route('completions.clear', props.completion.id), {
-      onSuccess: () => {
-        conversationHistory.length = 0;
-      },
-      onError: (errors) => {
-        console.error('Error:', errors); // Log error to debug
-      },
-      onFinish: () => {
-        isLoading.value = false;
-      },
-    });
-  } else {
-    form.delete(route('assistants.clear', props.assistant.id), {
-      onSuccess: () => {
-        conversationHistory.length = 0;
-      },
-      onError: (errors) => {
-        console.error('Error:', errors); // Log error to debug
-      },
-      onFinish: () => {
-        isLoading.value = false;
-      },
-    });
+  try {
+    const url = props.completion
+      ? route('completions.clear', props.completion.id)
+      : route('assistants.clear', props.assistant.id);
+
+    const res = await axios.delete(url);
+    console.log(res)
+    conversationHistory.length = 0;
+  } catch (error) {
+    console.error('Error clearing chat:', error);
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -116,7 +104,6 @@ onMounted(() => {
   }
 });
 
-// Filter out the first system message for display
 const filteredConversationHistory = computed(() => {
   return conversationHistory.filter((message, index) => !(index === 0 && message.role === 'system'));
 });
@@ -145,17 +132,17 @@ const filteredConversationHistory = computed(() => {
     <!-- Sticky Footer -->
     <footer class="sticky bottom-0 bg-white dark:bg-gray-800 py-4 px-2 sm:px-4 md:px-6">
       <form @submit.prevent="submitMessage" class="flex flex-col items-end space-y-2">
-        <TextAreaInput v-model="form.message" type="text" placeholder="Type your message..." class="w-full"
-          :disabled="form.processing" autofocus rows="3" @keydown="handleKeydown" />
+        <TextAreaInput v-model="message" type="text" placeholder="Type your message..." class="w-full"
+          :disabled="isLoading" autofocus rows="3" @keydown="handleKeydown" />
         <div class="flex items-center justify-between w-full">
-          <SecondaryButton @click="clearChat" :disabled="form.processing">
+          <SecondaryButton @click="clearChat" :disabled="isLoading">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
               stroke="currentColor" class="size-4 sm:size-6">
               <path stroke-linecap="round" stroke-linejoin="round"
                 d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
             </svg>
           </SecondaryButton>
-          <PrimaryButton :disabled="form.processing">
+          <PrimaryButton :disabled="isLoading || !message.trim()">
             <span class="hidden md:flex">Send</span>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
               stroke="currentColor" class="size-4 md:hidden">
