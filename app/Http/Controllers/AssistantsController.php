@@ -11,6 +11,7 @@ use App\Actions\Assistants\{
     UpdateAssistant as UpdateAssistantAction,
     DeleteAssistant as DeleteAssistantAction
 };
+use Exception;
 
 class AssistantsController extends Controller
 {
@@ -30,13 +31,11 @@ class AssistantsController extends Controller
     {
         try {
             $validatedData = $request->validated();
-            $data = array_merge($validatedData, ['tools' => $this->formatTools($validatedData['tools'])]);
-
-            $createAssistantAction($data);
+            $createAssistantAction($validatedData);
 
             $this->showMessage('Assistant created successfully!');
             return redirect()->back();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->showMessage($e->getMessage(), 'danger');
             return redirect()->back()->withErrors(['error' => $e->getMessage()])->withInput();
         }
@@ -49,7 +48,7 @@ class AssistantsController extends Controller
             return Inertia::render('Assistants/Manage', [
                 'assistant' => $assistant
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->showMessage($e->getMessage(), 'danger');
             return redirect()->route('assistants.show');
         }
@@ -59,13 +58,11 @@ class AssistantsController extends Controller
     {
         try {
             $validatedData = $request->validated();
-            $data = array_merge($validatedData, ['tools' => $this->formatTools($validatedData['tools'])]);
-
-            $updateAssistantAction($id, $data);
+            $updateAssistantAction($id, $validatedData);
 
             $this->showMessage('Assistant updated successfully!');
             return redirect()->back();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->showMessage($e->getMessage(), 'danger');
             return redirect()->back()->withErrors(['error' => $e->getMessage()])->withInput();
         }
@@ -78,7 +75,7 @@ class AssistantsController extends Controller
 
             $this->showMessage('Assistant deleted successfully!');
             return redirect()->route('assistants.show');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->showMessage($e->getMessage(), 'danger');
             return redirect()->back();
         }

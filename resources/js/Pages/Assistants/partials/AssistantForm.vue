@@ -20,6 +20,8 @@ const form = useForm({
     description: props.assistant?.description || '',
     instructions: props.assistant?.instructions || '',
     tools: props.assistant?.tools || [],
+    top_p: props.assistant?.top_p || 1,
+    temperature: props.assistant?.temperature || 1
 });
 
 let errorDetails = null;
@@ -125,6 +127,42 @@ const submitForm = () => {
             />
             <InputError :message="form.errors.tools" class="mt-2" />
         </div>
+
+        <details>
+            <summary class="text-gray-700 dark:text-gray-300">Advanced</summary>
+
+            <div class="mt-3">
+                <InputLabel for="top_p" value="top_p" />
+                <TextInput
+                    id="top_p"
+                    v-model="form.top_p"
+                    placeholder="Assistant top_p"
+                    class="w-full"
+                    name="top_p"
+                    autocomplete="top_p"
+                    type="number"
+                    min="0.1" max="1"
+                    step="0.1"
+                />
+                <InputError :message="form.errors.top_p" class="mt-2" />
+            </div>
+
+            <div class="mt-3">
+                <InputLabel for="temperature" value="temperature" />
+                <TextInput
+                    id="temperature"
+                    v-model="form.temperature"
+                    placeholder="Assistant temperature"
+                    class="w-full"
+                    name="temperature"
+                    autocomplete="temperature"
+                    type="number"
+                    min="0.1" max="2"
+                    step="0.1"
+                />
+                <InputError :message="form.errors.temperature" class="mt-2" />
+            </div>
+        </details>
 
         <!-- Buttons -->
         <div class="flex justify-end space-x-2">

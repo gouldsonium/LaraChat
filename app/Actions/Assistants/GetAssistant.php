@@ -24,6 +24,8 @@ class GetAssistant
                 return array_merge($assistant->toArray(), [
                     'instructions' => $jsonResponse['instructions'],
                     'tools' => array_column($jsonResponse['tools'], 'type'),
+                    'top_p' => $jsonResponse['top_p'],
+                    'temperature' => $jsonResponse['temperature']
                 ]);
             } else {
                 $errorDetails = $response->json()['error']['message'] ?? 'Failed to get assistant';

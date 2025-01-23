@@ -61,6 +61,8 @@ class ChatGptService
                     'description' => $data->description,
                     'instructions' => $data->instructions,
                     'tools' => $data->tools,
+                    'top_p' => $data->top_p,
+                    'temperature' => $data->temperature
                 ]);
         } catch (Exception $e) {
             Log::error("Create assistant error: " . $e->getMessage());
@@ -94,6 +96,8 @@ class ChatGptService
                     'description' => $data->description,
                     'instructions' => $data->instructions,
                     'tools' => $data->tools,
+                    'top_p' => $data->top_p,
+                    'temperature' => $data->temperature
                 ]);
         } catch (Exception $e) {
             Log::error("Update Assistant error: " . $e->getMessage());

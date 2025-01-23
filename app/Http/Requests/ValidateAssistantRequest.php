@@ -27,6 +27,41 @@ class ValidateAssistantRequest extends FormRequest
             'description' => 'required|string|max:512',
             'instructions' => 'required|string|max:2000',
             'tools' => 'nullable|array',
+            'top_p' => 'required|numeric|min:0.1|max:1',
+            'temperature' => 'required|numeric|min:0.1|max:2'
         ];
+    }
+
+    /**
+     * Format the tools field.
+     */
+    protected function formatTools(?array $tools): array
+    {
+        return $tools ? array_map(fn($tool) => ['type' => $tool], $tools) : [];
+    }
+
+    /**
+     * Customize the validated data returned by the request.
+     *
+     * @param string|null $key
+     * @param bool $stripNulls
+     * @return array
+     */
+    public function validated($key = null, $stripNulls = true): array
+    {
+        $validated = parent::validated($key, $stripNulls);
+
+        // Cast 'top_p' and 'temperature' to float
+        if (isset($validated['top_p'])) {
+            $validated['top_p'] = (float) $validated['top_p'];
+        }
+        if (isset($validated['temperature'])) {
+            $validated['temperature'] = (float) $validated['temperature'];
+        }
+
+        // Format the tools
+        $validated['tools'] = $this->formatTools($validated['tools'] ?? null);
+
+        return $validated;
     }
 }
