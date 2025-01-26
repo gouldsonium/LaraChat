@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\AssistantMessagesController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 use App\Http\Controllers\ChatGptController;
 use App\Http\Controllers\AssistantsController;
 use App\Http\Controllers\CompletionsController;
@@ -42,6 +41,8 @@ Route::middleware([
         Route::get('/manage/{id}', 'manage')->name('assistants.manage');
         Route::put('/update/{id}', 'update')->name('assistants.update');
         Route::delete('/delete/{id}', 'delete')->name('assistants.delete');
+
+        Route::post('/upload', 'uploadFile')->name('assistants.upload');
     });
 
     Route::controller(AssistantMessagesController::class)->prefix('assistants')->group(function () {

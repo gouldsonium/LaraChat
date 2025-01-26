@@ -5,6 +5,8 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
 
 class ChatGptService
 {
@@ -21,15 +23,19 @@ class ChatGptService
 
     /**
      * Get default headers for API requests.
+     *
+     * @param string $contentType The Content-Type for the request. Default is 'application/json'.
+     * @return array The headers array.
      */
-    protected function getHeaders(): array
+    protected function getHeaders(string $contentType = 'application/json'): array
     {
         return [
             'Authorization' => 'Bearer ' . $this->apiKey,
-            'Content-Type' => 'application/json',
-            'OpenAI-Beta' => 'assistants=v2'
+            'Content-Type' => $contentType,
+            'OpenAI-Beta' => 'assistants=v2',
         ];
     }
+
 
     /**
      * Create completions using the OpenAI API.
@@ -267,6 +273,51 @@ class ChatGptService
         } catch (\Exception $e) {
             Log::error("Run Thread with Stream error: " . $e->getMessage());
             throw new \Exception('Failed to run thread with streaming. Please try again later.');
+        }
+    }
+
+    /**
+     * Upload a file to ChatGPT using the OpenAI API.
+     *
+     * @param string $filePath Full path to the file to be uploaded.
+     * @param string $purpose Purpose of the file upload (e.g., "fine-tune").
+     * @return mixed API response.
+     * @throws Exception If the file upload fails.
+     */
+    public function uploadFile(string $filePath, string $purpose)
+    {
+        if (!file_exists($filePath)) {
+            throw new Exception('File does not exist: ' . $filePath);
+        }
+
+
+        try {
+            $client = new Client([
+                'base_uri' => 'https://api.openai.com/v1/',
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $this->apiKey,
+                ],
+            ]);
+
+            $response = $client->post('files', [
+                'multipart' => [
+                    [
+                        'name' => 'file',
+                        'contents' => fopen($filePath, 'r'),
+                        'filename' => basename($filePath),
+                    ],
+                    [
+                        'name' => 'purpose',
+                        'contents' => $purpose,
+                    ],
+                ],
+            ]);
+
+            $responseBody = $response->getBody()->getContents();
+            return json_decode($responseBody, true);
+        } catch (RequestException $e) {
+            Log::error('Upload File error: ' . $e->getMessage());
+            throw new Exception('Failed to upload file: ' . $e->getMessage());
         }
     }
 }

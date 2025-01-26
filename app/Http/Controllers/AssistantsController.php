@@ -12,6 +12,9 @@ use App\Actions\Assistants\{
     DeleteAssistant as DeleteAssistantAction
 };
 use Exception;
+use Illuminate\Http\Request;
+use App\Services\ChatGptService;
+use Illuminate\Support\Facades\Storage;
 
 class AssistantsController extends Controller
 {
@@ -78,6 +81,39 @@ class AssistantsController extends Controller
         } catch (Exception $e) {
             $this->showMessage($e->getMessage(), 'danger');
             return redirect()->back();
+        }
+    }
+
+    /**
+     * Handle file upload for assistants.
+     *
+     * @param int $id
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function uploadFile(Request $request, ChatGptService $chatGptService)
+    {
+        $request->validate([
+            'file' => 'required|file|max:10240|mimes:txt,json,csv,pdf', // Adjust size and type as needed
+        ]);
+
+        try {
+            $file = $request->file('file');
+            $filePath = $file->store('uploads'); // Store the file and get the path
+            $fullPath = Storage::disk('local')->path($filePath);
+            // dd($fullPath);
+
+            $response = $chatGptService->uploadFile($fullPath, 'assistants');
+
+            return response()->json([
+                'message' => 'File uploaded successfully.',
+                'data' => $response,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to upload file.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 }

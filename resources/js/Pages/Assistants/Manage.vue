@@ -6,6 +6,7 @@ import AssistantForm from './partials/AssistantForm.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DialogModal from '@/Components/DialogModal.vue';
+import UploadFile from './partials/UploadFile.vue';
 
 const props = defineProps({
     assistant: Object
@@ -67,6 +68,7 @@ const closeModal = () => {
         </DialogModal>
         <div class="max-w-7xl mx-auto">
             <AssistantForm :assistant="props.assistant" class="my-5" />
+            <UploadFile />
         </div>
     </AppLayout>
 </template>
