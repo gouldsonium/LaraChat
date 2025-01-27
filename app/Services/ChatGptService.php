@@ -182,11 +182,15 @@ class ChatGptService
 
     /**
      * Run thread using the OpenAI API and stream so response is generated when run is complete.
+     *
+     * @param string $threadId ID of the thread which stores the conversation
+     * @param string $assistantId Assistant yoy want to run this stream.
+     * @throws Exception If the file upload fails.
      */
     public function createRunWithStream(string $threadId, string $assistantId)
     {
         try {
-            $client = new \GuzzleHttp\Client();
+            $client = new Client();
             $response = $client->post(
                 "https://api.openai.com/v1/threads/{$threadId}/runs",
                 [
@@ -270,9 +274,9 @@ class ChatGptService
             }
 
             return $completeMessage; // Return the full message
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error("Run Thread with Stream error: " . $e->getMessage());
-            throw new \Exception('Failed to run thread with streaming. Please try again later.');
+            throw new Exception('Failed to run thread with streaming. Please try again later.');
         }
     }
 
@@ -289,7 +293,6 @@ class ChatGptService
         if (!file_exists($filePath)) {
             throw new Exception('File does not exist: ' . $filePath);
         }
-
 
         try {
             $client = new Client([
@@ -318,6 +321,19 @@ class ChatGptService
         } catch (RequestException $e) {
             Log::error('Upload File error: ' . $e->getMessage());
             throw new Exception('Failed to upload file: ' . $e->getMessage());
+        }
+    }
+
+    public function createVectorStore(string $name)
+    {
+        try {
+            return Http::withHeaders($this->getHeaders())
+                ->post('https://api.openai.com/v1/vector_stores/', [
+                    'name' => $name,
+                ]);
+        } catch (Exception $e) {
+            Log::error("Create Thread Message Error: " . $e->getMessage());
+            throw new Exception('Failed to create message in thread.');
         }
     }
 }

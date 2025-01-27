@@ -25,7 +25,8 @@ class GetAssistant
                     'instructions' => $jsonResponse['instructions'],
                     'tools' => array_column($jsonResponse['tools'], 'type'),
                     'top_p' => $jsonResponse['top_p'],
-                    'temperature' => $jsonResponse['temperature']
+                    'temperature' => $jsonResponse['temperature'],
+                    'vector_store_id' => $jsonResponse['tool_resources']['file_search']['vector_store_ids'][0] ?? null
                 ]);
             } else {
                 $errorDetails = $response->json()['error']['message'] ?? 'Failed to get assistant';

@@ -129,7 +129,7 @@ const submitForm = () => {
         </div>
 
         <details>
-            <summary class="text-gray-700 dark:text-gray-300">Advanced</summary>
+            <summary class="text-gray-700 dark:text-gray-300 cursor-pointer">Advanced</summary>
 
             <div class="mt-3">
                 <InputLabel for="top_p" value="top_p" />

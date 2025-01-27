@@ -9,7 +9,8 @@ import DialogModal from '@/Components/DialogModal.vue';
 import UploadFile from './partials/UploadFile.vue';
 
 const props = defineProps({
-    assistant: Object
+    assistant: Object,
+    showFiles: Boolean
 });
 const confirmingAssistantDeletion = ref(null);
 
@@ -68,7 +69,7 @@ const closeModal = () => {
         </DialogModal>
         <div class="max-w-7xl mx-auto">
             <AssistantForm :assistant="props.assistant" class="my-5" />
-            <UploadFile />
+            <UploadFile v-if="showFiles" class="my-5" />
         </div>
     </AppLayout>
 </template>

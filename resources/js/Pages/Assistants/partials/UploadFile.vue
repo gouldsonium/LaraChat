@@ -1,6 +1,7 @@
 <script setup>
   import { ref } from 'vue';
   import axios from 'axios';
+  import PrimaryButton from '@/Components/PrimaryButton.vue';
 
   const file = ref(null);
   const message = ref('');
@@ -36,11 +37,11 @@
 </script>
 
 <template>
-  <div class="upload-container">
-    <h1>Upload File for Assistant</h1>
+  <div class="p-4 bg-white dark:bg-gray-800 rounded shadow">
+    <h2 class="text-lg font-bold mb-4 text-gray-800 dark:text-gray-200">Upload File for Assistant</h2>
     <form @submit.prevent="uploadFile">
-      <input type="file" @change="onFileChange" />
-      <button type="submit" :disabled="!file" class="upload-button">Upload</button>
+      <input type="file" @change="onFileChange" class="text-gray-800 dark:text-gray-200" />
+      <PrimaryButton type="submit" :disabled="!file">Upload</PrimaryButton>
     </form>
     <p v-if="message" :class="{'success-message': success, 'error-message': !success}">
       {{ message }}
@@ -49,31 +50,6 @@
 </template>
 
 <style scoped>
-  .upload-container {
-    max-width: 500px;
-    margin: 2rem auto;
-    padding: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    text-align: center;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  }
-
-  .upload-button {
-    margin-top: 1rem;
-    padding: 0.5rem 1rem;
-    border: none;
-    border-radius: 4px;
-    background-color: #4caf50;
-    color: white;
-    cursor: pointer;
-  }
-
-  .upload-button:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-  }
-
   .success-message {
     color: #4caf50;
   }
